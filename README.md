@@ -22,7 +22,8 @@ I have made four controllers so far with different u-controllers, bluetooth and 
 
 <b>Improvements</b><br>
 PID calculations. Attractive but I have based my fan speeds on the noice level from the fans - which overcomplicates a PID solution for me.
-Removable serial interface seems very effective as you can set speed and temperature parameters and then remove the interface. The serial interface could of course be a simple cable (watch the voltage!), bluetooth or wifi etc.
+Removable serial interface seems very effective as you can set speed and temperature parameters and then remove the interface. The serial interface could of course be a simple cable (watch the voltage!), bluetooth or wifi etc.<br>
+A sleep routine would save some more mA but it should also wake up on serial interface use, hmmm...
 
 
 
