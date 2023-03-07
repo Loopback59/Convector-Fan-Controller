@@ -3,7 +3,7 @@ Controls the speed of a standard PC cooling fan depending on the heating water t
 
 The device controls a PC fan in an area you heating with a water based distributionsystem.
 
-Function
+<b>Function</b>
 The controller measures the temperature of the heatingwater and the incoming air to the fan.
 If the fans incoming air (AirTempIn) is greater then ex 25 degrees the fan stops because the room is hot enough.
 If the heating water is above 35 degrees the the fan is allowed to run. The fan speed is calculated from the differance between AirTempIn and MaxAirTemp. Example:
