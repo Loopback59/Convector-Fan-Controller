@@ -28,7 +28,10 @@ void I2C1_ReadDataBlock(i2c1_address_t address, uint8_t reg, uint8_t *data, size
 // Should be in EEPROM later on
 unsigned char FanOffTemp = 25;    // CMD = A, If room or Air temp is above 25 degrees we turn the fan off
 unsigned char WaterTempMIN = 30;  // CMD = B, If watertemp are below this value the fan wont run at all
+bool Stop = false;  //
 
+uint16_t eeAddress = 0xF000; 
+        
 
 uint8_t ReadTemp(unsigned char sensor)
 {
@@ -45,13 +48,25 @@ uint8_t ReadTemp(unsigned char sensor)
     return value;
 }
 
+void printMenu(void) {
+    print_crlf();
+    putstrln("------------------  M E N U E --------------------");
+    putstrln("S, Stop or start fan");
+    putstrln("+, increase max temp normally 5-20-33 degrees (Tm)");
+    putstrln("-, decrease max temp");
+    putstrln("W, increase min-watertemp too start fan (Wm)");
+    putstrln("Q, decrease min-watertemp");
+    putstrln("?, Help - this text");
+    putstrln("--------------------------------------------------");
+    print_crlf();
+}
 
 
 void main(void)
 {
-    uint8_t  AirTemp, WaterTemp;
+    uint8_t  AirTemp, WaterTemp, c;
     uint16_t DC = 0, Diff;
-   
+    
     SYSTEM_Initialize();
     INTERRUPT_GlobalInterruptEnable();
     //INTERRUPT_GlobalInterruptDisable();
@@ -60,153 +75,107 @@ void main(void)
 
     putstr("\nHello World!\n");
  
+            
+    FanOffTemp = DATAEE_ReadByte(eeAddress);
+    if (FanOffTemp == 255) FanOffTemp = 25;     // When programming EEPROM gets 0xFF
+    WaterTempMIN = DATAEE_ReadByte(eeAddress + 1);
+    if (WaterTempMIN == 255) WaterTempMIN = 35;
+
+    printMenu();
     
+            
     while (1)
     {
         AirTemp = ReadTemp(AIRSENSOR);
         WaterTemp = ReadTemp(WATERSENSOR);
 
-
-        if (WaterTemp > WaterTempMIN) {
+        if ((WaterTemp > WaterTempMIN) && (!Stop)) {
             if (AirTemp < FanOffTemp) { // We don't run fan if room air is hotter then 25 degrees.
                 Diff = FanOffTemp - AirTemp;
                 if (Diff >= 1)  DC =  100;  // DC Value is in % with 1 decimal 500 = 50.0 %
-                if (Diff >= 2)  DC =  400;
-                if (Diff >= 3)  DC =  700;
-                if (Diff >  4)  DC = 1000;
+                if (Diff >= 2)  DC =  400;  // 40%
+                if (Diff >= 3)  DC =  600;  // 60%
+                if (Diff >= 4)  DC =  800;
+                if (Diff >  5)  DC = 1000;
                 IO_RC2_SetHigh();
             } else {
                 DC = 0;  // Stop Fan
                 IO_RC2_SetLow();
             }
         } else {
-            PWM6_LoadDutyValue(100); // Soft stop...
-            __delay_ms(1000);
             PWM6_LoadDutyValue(0);
             DC = 0;  // Stop Fan - heater not on
             IO_RC2_SetLow();
         }
 
         PWM6_LoadDutyValue(DC);
-                
-        putstr("Air=");
-        print_int_dec(AirTemp);
-        putstr(" Water=");
-        print_int_dec(WaterTemp);
-        putstr(" DC=");
-        print_int_dec(DC);
 
-        putstr(" Time ");
-        print_byte_2dec(hours);
-        putchar(':');
-        print_byte_2dec(minutes);
-        putchar(':');
+        print_byte_2dec(hours);         putchar(':');
+        print_byte_2dec(minutes);       putchar(':');
         print_byte_2dec(seconds);
+ 
+        putstr(" Air: ");      print_int_dec(AirTemp);
+        putstr(" Water: ");   print_int_dec(WaterTemp);
+        putstr(" DC: ");           print_int_dec(DC/10);
+        putstr("% FanOffTemp=");   print_byte_2dec(FanOffTemp);
+        putstr(" WaterTempMIN="); print_byte_2dec(WaterTempMIN);
         print_crlf();
 
-        __delay_ms(2000);
+        bool CommandGiven = false;
+        if (EUSART1_is_rx_ready()) {
+            c = EUSART1_Read();
+            CommandGiven = true;
+            print_crlf();
+            putstr("Command = '");
+            putchar(c);
+            putstrln("'");
+
+            if ( c == '?') 
+                printMenu();
+
+            if ( c == 'S')
+            {
+              Stop = !Stop;
+              if (Stop)
+                  putstrln("Stop fan");
+              else
+                  putstrln("Start fan");
+            }
+            if ( c == '+')
+            {
+              if (++FanOffTemp > 33)
+                FanOffTemp = 33;
+            }
+            if ( c == '-')
+            {
+              if (--FanOffTemp < 5)
+                FanOffTemp = 5;
+            }
+            if ( c == 'W')
+            {
+              if (++WaterTempMIN > 30)
+                WaterTempMIN = 30;
+            }
+            if ( c == 'Q')
+            {
+              if (--WaterTempMIN < 5)
+                WaterTempMIN = 5;
+            }
+
+            // Save to EEPROM at every comand given
+            DATAEE_WriteByte(eeAddress,     FanOffTemp);
+            DATAEE_WriteByte(eeAddress + 1, WaterTempMIN);
+
+            // Clear buffer
+            while (EUSART1_is_rx_ready())
+              c = EUSART1_Read();
+        }    
+        
+        
+        if (!CommandGiven)  // Don't delay if we just gave a command
+            __delay_ms(997);
+
     }
 }
 
-/*
- 
- 
-  // RPM 
-  if (half_revolutions >= 20)
-  {
-    //Update RPM every 20 counts, increase this for better RPM resolution, decrease for faster update
-    rpm = 30 * 1000 / (millis() - timeold) * half_revolutions;
-    timeold = millis();
-    half_revolutions = 0;
-  }
 
-
-
-  if (Serial.available())
-  {
-    c = Serial.read();
-    Serial.println();
-    Serial.print("Command = '");
-    Serial.print(c);
-    Serial.println("'");
-
-    if ( c == '?')
-    {
-      Serial.println();
-      Serial.println("S, Stop or start fan");
-      Serial.println("+, increase max temp normally 5-20-33 degrees (Tm)");
-      Serial.println("-, decrease max temp");
-      Serial.println("W, increase min-watertemp too start fan (Wm)");
-      Serial.println("Q, decrease min-watertemp");
-      Serial.println("?, Help - this text");
-    }
-
-    if ( c == 'S')
-    {
-      Stop = !Stop;
-      if (Stop)
-        Serial.println("Stop");
-      else
-        Serial.println("Start");
-    }
-    if ( c == '+')
-    {
-      if (++FanOffTemp > 33)
-        FanOffTemp = 33;
-    }
-    if ( c == '-')
-    {
-      if (--FanOffTemp < 5)
-        FanOffTemp = 5;
-    }
-    if ( c == 'W')
-    {
-      if (++WaterTempMIN > 30)
-        WaterTempMIN = 30;
-    }
-    if ( c == 'Q')
-    {
-      if (--WaterTempMIN < 5)
-        WaterTempMIN = 5;
-    }
-    eeAddress = 0;
-    EEPROM.put(eeAddress, FanOffTemp);    
-    eeAddress += sizeof(FanOffTemp);
-    EEPROM.put(eeAddress, WaterTempMIN);    
-    // Clear buffer
-    while (Serial.available())
-      c = Serial.read();
-  }
-
-
-
-  Serial.print(" Wtr=");
-  Serial.print(WaterTemp);
-
-  Serial.print(" Air=");
-  Serial.print(AirTemp);
-
-  Serial.print(" DC=");
-  Serial.print(DC);
-
-  Serial.print(" Off=");
-  Serial.print(FanOffTemp);
-
-  Serial.print(" Wtrm=");
-  Serial.print(WaterTempMIN);
-
-  Serial.print(" rpm=");
-  Serial.println(rpm, DEC);
-  
-}
-
- 
-
-
-void rpm_fan()
-{
-  half_revolutions++;
-  //Each rotation, this interrupt function is run twice
-}
- 
- */

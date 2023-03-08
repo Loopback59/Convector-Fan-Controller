@@ -126,6 +126,13 @@ void _print_universal_dec(unsigned int indata, unsigned int digit_divisor, unsig
 }
 
 
+void putstrln( char *s ) {
+    putstr( s );
+    print_crlf();
+}
+
+
+
 void putstr( char *s ) {
    	char c;
 
