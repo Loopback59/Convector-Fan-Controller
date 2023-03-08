@@ -30,5 +30,16 @@ A sleep routine (controller and the LM75 temp sensors) would save some more mA b
 The controller uses 4.2mA without a fan connected.
 
 
-
+void printMenu(void) {
+    print_crlf();
+    putstrln("------------------  M E N U ---------------------");
+    putstrln("S, Stop or start fan");
+    putstrln("+, increase max temp normally 5-20-33 degrees");
+    putstrln("-, decrease max temp");
+    putstrln("W, increase min-watertemp too start fan");
+    putstrln("Q, decrease min-watertemp");
+    putstrln("?, Help - this text");
+    putstrln("--------------------------------------------------");
+    print_crlf();
+}
 
