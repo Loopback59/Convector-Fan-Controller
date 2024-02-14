@@ -21,7 +21,7 @@ Any works. I've use some old ones before that was tricky to program so I looked 
 I have made four controllers so far with different u-controllers, bluetooth and wifi capabilities. All wireless methods consumes "a lot of power" ex a ESP-01 (ESP8266) is idleling at circa 60mA or 0.7W. I personally don't need to have a constant and exact info about room temperature in a sailing boat.
 
 <b>Configuration</b><br>
-A removable serial interface can be connected to set temperature limits. The serial interface is a simple RXD, TXD and GND. Watch the voltage!
+A removable serial interface can be connected to set temperature limits. The serial interface is a simple 3.3V RXD, TXD and GND. Watch the voltage!
 Serial- Bluetooth- or wifidongle etc.<br>
 
 <b>Improvements</b><br>
@@ -30,16 +30,16 @@ A sleep routine (controller and the LM75 temp sensors) would save some more mA b
 The controller uses 4.2mA without a fan connected.
 
 
-void printMenu(void) {
-    print_crlf();
-    putstrln("------------------  M E N U ---------------------");
-    putstrln("S, Stop or start fan");
-    putstrln("+, increase max temp normally 5-20-33 degrees");
-    putstrln("-, decrease max temp");
-    putstrln("W, increase min-watertemp too start fan");
-    putstrln("Q, decrease min-watertemp");
-    putstrln("?, Help - this text");
-    putstrln("--------------------------------------------------");
-    print_crlf();
-}
+void printMenu(void) {<br>
+    print_crlf();<br>
+    putstrln("------------------  M E N U ---------------------");<br>
+    putstrln("S, Stop or start fan");<br>
+    putstrln("+, increase max temp normally 5-20-33 degrees");<br>
+    putstrln("-, decrease max temp");<br>
+    putstrln("W, increase min-watertemp too start fan");<br>
+    putstrln("Q, decrease min-watertemp");<br>
+    putstrln("?, Help - this text");<br>
+    putstrln("--------------------------------------------------");<br>
+    print_crlf();<br>
+}<br>
 
